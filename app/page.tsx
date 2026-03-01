@@ -25,6 +25,9 @@ import {
   CheckCircle,
   X,
   Trash2,
+  Copy,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 
 const supabaseUrl = 'https://wlxjlzwsdydnanknqfwv.supabase.co';
@@ -44,7 +47,16 @@ export default function PadelProFinal() {
   const [loading, setLoading] = useState(false);
   const [cancelCode, setCancelCode] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
+  const [toast, setToast] = useState<{msg: string; type: 'error'|'info'} | null>(null);
+  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (msg: string, type: 'error' | 'info' = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   // ─── Cargar reservas ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -98,16 +110,16 @@ export default function PadelProFinal() {
   // ─── Confirmar reserva ────────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!nombre || !portal || !piso || !letra) {
-      alert('Por favor, completa todos los campos de contacto.');
+      showToast('Por favor, completa todos los campos.', 'error');
       return;
     }
     if (!isBookingValid(selectedTime, duration)) {
-      alert('El horario seleccionado se solapa con una reserva existente.');
+      showToast('El horario se solapa con otra reserva.', 'error');
       return;
     }
     const bookingStart = parse(selectedTime, 'HH:mm', selectedDate);
     if (isBefore(bookingStart, new Date())) {
-      alert('No puedes reservar en una hora pasada.');
+      showToast('No puedes reservar en una hora pasada.', 'error');
       return;
     }
 
@@ -129,17 +141,16 @@ export default function PadelProFinal() {
 
     setLoading(false);
     if (error) {
-      alert('Error al guardar. Revisa la conexión o si ya tienes una reserva.');
+      showToast('Error al guardar. Revisa la conexión.', 'error');
     } else {
-      alert(`¡Confirmada!\nCódigo de cancelación: ${codigoCancelacion}`);
-      window.location.reload();
+      setShowSuccess(codigoCancelacion);
     }
   };
 
   // ─── Cancelar reserva ─────────────────────────────────────────────────────
   const handleCancel = async () => {
     if (!cancelCode) {
-      alert('Introduce el código de cancelación de 4 dígitos.');
+      showToast('Introduce el código de 4 dígitos.', 'error');
       return;
     }
     setCancelLoading(true);
@@ -151,12 +162,19 @@ export default function PadelProFinal() {
 
     setCancelLoading(false);
     if (error) {
-      alert('Error al intentar cancelar.');
+      showToast('Error al intentar cancelar.', 'error');
     } else if (data && data.length > 0) {
-      alert('Reserva cancelada correctamente.');
-      window.location.reload();
+      setShowCancelSuccess(true);
     } else {
-      alert('No se encontró ninguna reserva con ese código.');
+      showToast('Código no encontrado.', 'error');
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (showSuccess) {
+      navigator.clipboard.writeText(showSuccess);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -409,6 +427,56 @@ export default function PadelProFinal() {
 
         </div>
       </main>
+
+      {/* ── Toast notifications ── */}
+      {toast && (
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 font-black text-sm transition-all
+          ${toast.type === 'error' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-purple-50 text-purple-600 border border-purple-100'}`}>
+          <AlertCircle size={16} className="shrink-0" />
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ── Modal confirmación reserva ── */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
+          <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-purple-200">
+              <CheckCircle size={34} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">¡Reservado!</h2>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">Guarda este código para cancelar si lo necesitas:</p>
+            <div className="relative mb-6">
+              <div className="bg-slate-50 border border-slate-100 p-6 rounded-3xl">
+                <span className="text-5xl font-black tracking-widest text-purple-600">{showSuccess}</span>
+              </div>
+              <button onClick={copyToClipboard} className="absolute -top-3 -right-3 p-3 bg-white border border-slate-100 rounded-full shadow-sm hover:scale-110 transition-all active:scale-95">
+                {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-slate-400" />}
+              </button>
+            </div>
+            <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all active:scale-95">
+              ENTENDIDO
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal cancelación exitosa ── */}
+      {showCancelSuccess && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
+          <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-red-100">
+              <Trash2 size={30} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Cancelada</h2>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">Tu reserva ha sido eliminada correctamente.</p>
+            <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all active:scale-95">
+              ENTENDIDO
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
