@@ -238,28 +238,38 @@ export default function PadelProFinal() {
   return (
     <div className="min-h-screen bg-[#FDFEFF] text-[#0F172A] pb-20 relative overflow-hidden antialiased font-[var(--font-jakarta),_sans-serif]">
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-5%] w-[60%] h-[60%] bg-purple-200/40 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-indigo-100/50 rounded-full blur-[100px]" />
+        <div className="blob-1 absolute top-[-15%] left-[-10%] w-[70%] h-[70%] bg-purple-300/30 rounded-full blur-[140px]" />
+        <div className="blob-2 absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-violet-200/40 rounded-full blur-[120px]" />
+        <div className="blob-3 absolute top-[35%] right-[0%] w-[45%] h-[45%] bg-indigo-200/25 rounded-full blur-[100px]" />
       </div>
 
       <style jsx global>{`
-        .light-glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.02); }
+        .light-glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.04); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
+        @keyframes blobFloat {
+          0%, 100% { transform: scale(1) translate(0px, 0px); opacity: 0.7; }
+          33% { transform: scale(1.07) translate(20px, -15px); opacity: 1; }
+          66% { transform: scale(0.95) translate(-15px, 10px); opacity: 0.5; }
+        }
+        .blob-1 { animation: blobFloat 8s ease-in-out infinite; }
+        .blob-2 { animation: blobFloat 11s ease-in-out infinite reverse; animation-delay: -3s; }
+        .blob-3 { animation: blobFloat 14s ease-in-out infinite; animation-delay: -6s; }
       `}</style>
 
-      <header className="relative z-10 pt-16 pb-8 px-6 text-center">
-        <h1 className="text-5xl font-[800] tracking-tighter mb-2 bg-gradient-to-b from-slate-900 to-slate-600 bg-clip-text text-transparent">
+      <header className="relative z-10 pt-10 sm:pt-16 pb-6 sm:pb-8 px-4 sm:px-6 text-center">
+        <h1 className="text-4xl sm:text-5xl font-[800] tracking-tighter mb-2 bg-gradient-to-b from-slate-900 to-slate-600 bg-clip-text text-transparent">
           Reserva <span className="text-purple-600 italic">Pádel</span>
         </h1>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Calle Ramón y Cajal 25, Alcobendas</p>
       </header>
 
-      <main className="relative z-10 max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
 
         {/* ── Calendario ── */}
         <div className="lg:col-span-7">
-          <section className="light-glass p-8 rounded-[3rem]">
+          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
             <div className="flex justify-between items-center mb-10">
-              <h2 className="text-xl font-[800] text-slate-800 capitalize tracking-tight">
+              <h2 className="text-base sm:text-xl font-[800] text-slate-800 capitalize tracking-tight">
                 {format(currentMonth, 'MMMM yyyy', { locale: es })}
               </h2>
               <div className="flex gap-2">
@@ -267,7 +277,7 @@ export default function PadelProFinal() {
                 <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2.5 rounded-xl bg-white border border-slate-100 shadow-sm text-slate-400"><ChevronRight size={18} /></button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-center">
               {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day) => (
                 <div key={day} className="text-[10px] font-black text-slate-300 mb-4">{day}</div>
               ))}
@@ -276,7 +286,7 @@ export default function PadelProFinal() {
                 const isPast = isBefore(startOfDay(day), today);
                 return (
                   <button key={idx} onClick={() => !isPast && setSelectedDate(day)} disabled={isPast}
-                    className={`h-10 w-10 mx-auto rounded-full flex items-center justify-center text-sm font-bold transition-all
+                    className={`h-8 w-8 sm:h-10 sm:w-10 mx-auto rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
                       ${isSelected ? 'bg-purple-600 text-white shadow-lg shadow-purple-100' : 'text-slate-600 hover:bg-purple-50 hover:text-purple-600'}
                       ${!isSameMonth(day, currentMonth) ? 'opacity-10' : 'opacity-100'}
                       ${isPast && isSameMonth(day, currentMonth) ? 'opacity-25 cursor-not-allowed line-through' : ''}`}>
@@ -289,8 +299,8 @@ export default function PadelProFinal() {
         </div>
 
         {/* ── Horario + Formulario ── */}
-        <div className="lg:col-span-5 space-y-8">
-          <section className="light-glass p-8 rounded-[3rem]">
+        <div className="lg:col-span-5 space-y-5 sm:space-y-8">
+          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
             <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-4">HORARIO</h3>
             <div className="relative h-44 overflow-hidden mb-8">
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
@@ -354,7 +364,7 @@ export default function PadelProFinal() {
           </section>
 
           {/* Formulario datos */}
-          <section className="light-glass p-8 rounded-[3rem] relative z-10">
+          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] relative z-10">
             <div className="space-y-4">
               <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                 <input value={nombre} onChange={(e) => setNombre(e.target.value.toUpperCase())}
@@ -376,7 +386,7 @@ export default function PadelProFinal() {
           </section>
 
           {/* Cancelar reserva */}
-          <section className="light-glass p-8 rounded-[3rem]">
+          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
             <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-300 mb-6">¿CANCELAR RESERVA?</h3>
             <div className="flex gap-2">
               <input
