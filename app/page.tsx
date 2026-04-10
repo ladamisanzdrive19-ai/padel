@@ -25,8 +25,6 @@ import {
   CheckCircle,
   X,
   Trash2,
-  Copy,
-  Check,
   AlertCircle,
 } from 'lucide-react';
 
@@ -45,12 +43,17 @@ export default function PadelProFinal() {
   const [piso, setPiso] = useState('');
   const [letra, setLetra] = useState('');
   const [loading, setLoading] = useState(false);
-  const [cancelCode, setCancelCode] = useState('');
+  const [cancelNombre, setCancelNombre] = useState('');
+  const [cancelPortal, setCancelPortal] = useState('');
+  const [cancelPiso, setCancelPiso] = useState('');
+  const [cancelLetra, setCancelLetra] = useState('');
+  const [misReservas, setMisReservas] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [showCancelSuccess, setShowCancelSuccess] = useState(false);
   const [toast, setToast] = useState<{msg: string; type: 'error'|'info'} | null>(null);
-  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string, type: 'error' | 'info' = 'info') => {
@@ -58,7 +61,6 @@ export default function PadelProFinal() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ─── Cargar reservas ──────────────────────────────────────────────────────
   useEffect(() => {
     const cargarReservas = async () => {
       const fechaFormateada = format(selectedDate, 'yyyy-MM-dd');
@@ -67,15 +69,13 @@ export default function PadelProFinal() {
         .select('*')
         .eq('fecha', fechaFormateada);
       if (error) {
-        console.error('❌ ERROR DE SUPABASE:', error.message);
+        console.error(error.message);
       } else {
         setReservasExistentes(data || []);
       }
     };
     cargarReservas();
   }, [selectedDate]);
-
-  // ─── FIX: useCallback para declarar antes de los useEffect que las usan ──
 
   const isSlotOccupied = useCallback((time: string) => {
     return reservasExistentes.some((res) => {
@@ -99,7 +99,6 @@ export default function PadelProFinal() {
     });
   }, [reservasExistentes, selectedDate]);
 
-  // Reset duración si la combinación actual genera solapamiento
   useEffect(() => {
     if (!isBookingValid(selectedTime, duration)) {
       const validDuration = [30, 60, 90, 120].find((d) => isBookingValid(selectedTime, d));
@@ -107,7 +106,6 @@ export default function PadelProFinal() {
     }
   }, [selectedTime, isBookingValid]);
 
-  // ─── Confirmar reserva ────────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!nombre || !portal || !piso || !letra) {
       showToast('Por favor, completa todos los campos.', 'error');
@@ -125,7 +123,6 @@ export default function PadelProFinal() {
 
     setLoading(true);
     const horaFin = format(addMinutes(parse(selectedTime, 'HH:mm', new Date()), duration), 'HH:mm');
-    const codigoCancelacion = Math.floor(1000 + Math.random() * 9000).toString();
 
     const { error } = await supabase.from('reservas').insert([{
       fecha: format(selectedDate, 'yyyy-MM-dd'),
@@ -136,49 +133,58 @@ export default function PadelProFinal() {
       puerta: letra,
       nombre,
       contacto: 'N/A',
-      codigo_cancelacion: codigoCancelacion,
     }]);
 
     setLoading(false);
     if (error) {
       showToast('Error al guardar. Revisa la conexión.', 'error');
     } else {
-      setShowSuccess(codigoCancelacion);
+      setShowSuccess(true);
     }
   };
 
-  // ─── Cancelar reserva ─────────────────────────────────────────────────────
-  const handleCancel = async () => {
-    if (!cancelCode) {
-      showToast('Introduce el código de 4 dígitos.', 'error');
-      return;
-    }
-    setCancelLoading(true);
+  const handleSearchReservas = async () => {
+    setSearchLoading(true);
+    setSearched(false);
+    
     const { data, error } = await supabase
       .from('reservas')
+      .select('*')
+      .eq('nombre', cancelNombre)
+      .eq('portal', cancelPortal)
+      .eq('piso', cancelPiso)
+      .eq('puerta', cancelLetra)
+      .gte('fecha', format(new Date(), 'yyyy-MM-dd')); 
+
+    setSearchLoading(false);
+    setSearched(true);
+
+    if (error) {
+      showToast('Error al buscar reservas.', 'error');
+    } else {
+      setMisReservas(data || []);
+    }
+  };
+
+  const handleCancelReserva = async (id: any) => {
+    setCancelLoading(true);
+    
+    const { error } = await supabase
+      .from('reservas')
       .delete()
-      .eq('codigo_cancelacion', cancelCode)
-      .select();
+      .eq('id', id);
 
     setCancelLoading(false);
+
     if (error) {
       showToast('Error al intentar cancelar.', 'error');
-    } else if (data && data.length > 0) {
-      setShowCancelSuccess(true);
     } else {
-      showToast('Código no encontrado.', 'error');
+      setShowCancelSuccess(true);
+      setMisReservas(prev => prev.filter(res => res.id !== id));
+      setReservasExistentes(prev => prev.filter(res => res.id !== id));
     }
   };
 
-  const copyToClipboard = () => {
-    if (showSuccess) {
-      navigator.clipboard.writeText(showSuccess);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  // ─── Calendario ───────────────────────────────────────────────────────────
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
@@ -187,7 +193,6 @@ export default function PadelProFinal() {
 
   const today = startOfDay(new Date());
 
-  // ─── Slots de tiempo ──────────────────────────────────────────────────────
   const timeSlots = useMemo(() => {
     const slots = [];
     for (let h = 8; h <= 22; h++) {
@@ -203,7 +208,6 @@ export default function PadelProFinal() {
     }
   };
 
-  // ─── Custom Dropdown ──────────────────────────────────────────────────────
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
@@ -249,7 +253,6 @@ export default function PadelProFinal() {
     );
   };
 
-  // ─── Resumen reserva ──────────────────────────────────────────────────────
   const endTime = format(addMinutes(parse(selectedTime, 'HH:mm', new Date()), duration), 'HH:mm');
   const bookingIsValid = isBookingValid(selectedTime, duration);
 
@@ -283,7 +286,6 @@ export default function PadelProFinal() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
 
-        {/* ── Calendario ── */}
         <div className="lg:col-span-7">
           <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
             <div className="flex justify-between items-center mb-10">
@@ -316,7 +318,6 @@ export default function PadelProFinal() {
           </section>
         </div>
 
-        {/* ── Horario + Formulario ── */}
         <div className="lg:col-span-5 space-y-5 sm:space-y-8">
           <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
             <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-4">HORARIO</h3>
@@ -334,7 +335,6 @@ export default function PadelProFinal() {
                         ${ocupado ? 'text-slate-300 text-base' : selectedTime === time ? 'text-purple-600 scale-110 text-3xl' : 'text-slate-200 text-3xl'}`}>
                         {time}
                       </span>
-                      {/* ✅ FIX: null check añadido en el find */}
                       {ocupado && (() => {
                         const res = reservasExistentes.find((r) => {
                           if (!r.hora_inicio || !r.hora_fin) return false;
@@ -356,7 +356,6 @@ export default function PadelProFinal() {
               </div>
             </div>
 
-            {/* Duración */}
             <div className="grid grid-cols-4 gap-2">
               {[30, 60, 90, 120].map((opt) => {
                 const invalido = !isBookingValid(selectedTime, opt);
@@ -372,7 +371,6 @@ export default function PadelProFinal() {
               })}
             </div>
 
-            {/* Resumen */}
             <div className={`mt-6 p-4 rounded-2xl text-center text-xs font-bold transition-all
               ${bookingIsValid ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-red-50 text-red-400 border border-red-100'}`}>
               {bookingIsValid
@@ -381,7 +379,6 @@ export default function PadelProFinal() {
             </div>
           </section>
 
-          {/* Formulario datos */}
           <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] relative z-10">
             <div className="space-y-4">
               <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
@@ -403,32 +400,73 @@ export default function PadelProFinal() {
             </div>
           </section>
 
-          {/* Cancelar reserva */}
           <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
-            <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-300 mb-6">¿CANCELAR RESERVA?</h3>
-            <div className="flex gap-2">
-              <input
-                value={cancelCode}
-                onChange={(e) => setCancelCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="bg-slate-50/50 w-full p-4 rounded-2xl border border-slate-100 font-bold text-xs outline-none text-center placeholder:text-slate-200 tracking-[0.3em]"
-                placeholder="CÓDIGO DE 4 DÍGITOS"
-                maxLength={4}
-                inputMode="numeric"
-              />
+            <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-300 mb-4">¿CANCELAR RESERVA?</h3>
+            <div className="space-y-3">
+              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <input
+                  value={cancelNombre}
+                  onChange={(e) => { setCancelNombre(e.target.value.toUpperCase()); setSearched(false); setMisReservas([]); }}
+                  className="bg-transparent w-full outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300"
+                  placeholder="TU NOMBRE"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <CustomSelect
+                  id="c-portal" value={cancelPortal}
+                  onChange={(v: string) => { setCancelPortal(v); setCancelPiso(''); setCancelLetra(''); setSearched(false); setMisReservas([]); }}
+                  placeholder="PORTAL" options={['1', '2', '3']}
+                />
+                <CustomSelect
+                  id="c-piso" value={cancelPiso}
+                  onChange={(v: string) => { setCancelPiso(v); setCancelLetra(''); setSearched(false); setMisReservas([]); }}
+                  placeholder="PISO" options={['Bajo', '1', '2', '3', '4']} disabled={!cancelPortal}
+                />
+                <CustomSelect
+                  id="c-letra" value={cancelLetra}
+                  onChange={(v: string) => { setCancelLetra(v); setSearched(false); setMisReservas([]); }}
+                  placeholder="LETRA" options={['A', 'B', 'C']} disabled={!cancelPiso}
+                />
+              </div>
               <button
-                onClick={handleCancel}
-                disabled={cancelLoading || cancelCode.length < 4}
-                className={`px-6 rounded-2xl font-black text-[10px] transition-all flex items-center justify-center
-                  ${cancelLoading || cancelCode.length < 4 ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
-                {cancelLoading ? '...' : <Trash2 size={16} />}
+                onClick={handleSearchReservas}
+                disabled={searchLoading || !cancelNombre || !cancelPortal || !cancelPiso || !cancelLetra}
+                className={`w-full p-4 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center justify-center gap-2
+                  ${searchLoading || !cancelNombre || !cancelPortal || !cancelPiso || !cancelLetra
+                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                {searchLoading ? 'BUSCANDO...' : 'BUSCAR MIS RESERVAS'}
               </button>
+
+              {searched && misReservas.length === 0 && (
+                <div className="text-center text-xs font-bold text-slate-300 py-3">
+                  No tienes reservas activas con estos datos.
+                </div>
+              )}
+              {misReservas.map((res) => (
+                <div key={res.id} className="flex items-center justify-between bg-red-50 border border-red-100 p-4 rounded-2xl">
+                  <div>
+                    <p className="font-black text-xs text-slate-700">
+                      {format(new Date(res.fecha + 'T00:00:00'), "d MMM yyyy", { locale: es })}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-bold">
+                      {res.hora_inicio?.substring(0,5)} → {res.hora_fin?.substring(0,5)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleCancelReserva(res.id)}
+                    disabled={cancelLoading}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-xl font-black text-[10px] hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50">
+                    <Trash2 size={12} /> CANCELAR
+                  </button>
+                </div>
+              ))}
             </div>
           </section>
 
         </div>
       </main>
 
-      {/* ── Toast notifications ── */}
       {toast && (
         <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 font-black text-sm transition-all
           ${toast.type === 'error' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-purple-50 text-purple-600 border border-purple-100'}`}>
@@ -437,7 +475,6 @@ export default function PadelProFinal() {
         </div>
       )}
 
-      {/* ── Modal confirmación reserva ── */}
       {showSuccess && (
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
           <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
@@ -445,15 +482,9 @@ export default function PadelProFinal() {
               <CheckCircle size={34} className="text-white" />
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">¡Reservado!</h2>
-            <p className="text-slate-400 text-sm mb-6 leading-relaxed">Guarda este código para cancelar si lo necesitas:</p>
-            <div className="relative mb-6">
-              <div className="bg-slate-50 border border-slate-100 p-6 rounded-3xl">
-                <span className="text-5xl font-black tracking-widest text-purple-600">{showSuccess}</span>
-              </div>
-              <button onClick={copyToClipboard} className="absolute -top-3 -right-3 p-3 bg-white border border-slate-100 rounded-full shadow-sm hover:scale-110 transition-all active:scale-95">
-                {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-slate-400" />}
-              </button>
-            </div>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              Para cancelar, ve a la sección <strong className="text-slate-600">¿Cancelar reserva?</strong> e introduce tu nombre y dirección.
+            </p>
             <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all active:scale-95">
               ENTENDIDO
             </button>
@@ -461,7 +492,6 @@ export default function PadelProFinal() {
         </div>
       )}
 
-      {/* ── Modal cancelación exitosa ── */}
       {showCancelSuccess && (
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
           <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
