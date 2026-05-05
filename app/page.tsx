@@ -1,512 +1,290 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import {
-  format,
-  addMonths,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isSameMonth,
-  isSameDay,
-  eachDayOfInterval,
-  addMinutes,
-  parse,
-  isBefore,
-  startOfDay,
-} from 'date-fns';
-import { es } from 'date-fns/locale';
-import {
+import React, { useState } from 'react';
+import { 
+  Building, 
+  ShieldCheck, 
+  PlayCircle, 
+  CheckCircle2, 
+  Zap, 
+  LayoutGrid, 
+  QrCode, 
+  Wifi,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  X,
-  Trash2,
-  AlertCircle,
+  Mail,
+  MessageSquare,
+  ArrowRight,
+  User,
+  Clock,
+  MapPin,
+  Pointer
 } from 'lucide-react';
 
-const supabaseUrl = 'https://wlxjlzwsdydnanknqfwv.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndseGpsendzZHlkbmFua25xZnd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzMTI5MTYsImV4cCI6MjA4Nzg4ODkxNn0.6IAFmrfSGb45AG_ZVIAMgc-Zvm6qTFY1iX781RzhZpg';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export default function UrbaReservaLandingPage() {
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-export default function PadelProFinal() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState('09:00');
-  const [duration, setDuration] = useState(60);
-  const [reservasExistentes, setReservasExistentes] = useState<any[]>([]);
-  const [nombre, setNombre] = useState('');
-  const [portal, setPortal] = useState('');
-  const [piso, setPiso] = useState('');
-  const [letra, setLetra] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [cancelNombre, setCancelNombre] = useState('');
-  const [cancelPortal, setCancelPortal] = useState('');
-  const [cancelPiso, setCancelPiso] = useState('');
-  const [cancelLetra, setCancelLetra] = useState('');
-  const [misReservas, setMisReservas] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
-  const [toast, setToast] = useState<{msg: string; type: 'error'|'info'} | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const showToast = (msg: string, type: 'error' | 'info' = 'info') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  useEffect(() => {
-    const cargarReservas = async () => {
-      const fechaFormateada = format(selectedDate, 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('reservas')
-        .select('*')
-        .eq('fecha', fechaFormateada);
-      if (error) {
-        console.error(error.message);
-      } else {
-        setReservasExistentes(data || []);
-      }
-    };
-    cargarReservas();
-  }, [selectedDate]);
-
-  const isSlotOccupied = useCallback((time: string) => {
-    return reservasExistentes.some((res) => {
-      if (!res.hora_inicio || !res.hora_fin) return false;
-      const inicio = parse(res.hora_inicio.substring(0, 5), 'HH:mm', selectedDate);
-      const fin = parse(res.hora_fin.substring(0, 5), 'HH:mm', selectedDate);
-      const slotInicio = parse(time, 'HH:mm', selectedDate);
-      const slotFin = addMinutes(slotInicio, 30);
-      return slotInicio < fin && slotFin > inicio;
-    });
-  }, [reservasExistentes, selectedDate]);
-
-  const isBookingValid = useCallback((time: string, dur: number) => {
-    const inicio = parse(time, 'HH:mm', selectedDate);
-    const fin = addMinutes(inicio, dur);
-    return !reservasExistentes.some((res) => {
-      if (!res.hora_inicio || !res.hora_fin) return false;
-      const resInicio = parse(res.hora_inicio.substring(0, 5), 'HH:mm', selectedDate);
-      const resFin = parse(res.hora_fin.substring(0, 5), 'HH:mm', selectedDate);
-      return inicio < resFin && fin > resInicio;
-    });
-  }, [reservasExistentes, selectedDate]);
-
-  useEffect(() => {
-    if (!isBookingValid(selectedTime, duration)) {
-      const validDuration = [30, 60, 90, 120].find((d) => isBookingValid(selectedTime, d));
-      setDuration(validDuration ?? 30);
+  const faqs = [
+    {
+      q: "¿Los vecinos tienen que instalar alguna aplicación?",
+      a: "No. Los vecinos acceden a través de un enlace web o escaneando un código QR. Funciona como una app nativa en su móvil, pero sin descargas ni registros."
+    },
+    {
+      q: "¿Qué pasa con los vecinos que no se llevan bien con la tecnología?",
+      a: "La interfaz es tan simple que si saben usar WhatsApp, saben reservar. Solo tienen que tocar la hora que quieren y confirmar."
+    },
+    {
+      q: "¿Podemos poner nuestras propias normas de la urbanización?",
+      a: "Por supuesto. Podéis decidir cuántos días de antelación se permite reservar, la duración máxima del turno y el horario de apertura."
+    },
+    {
+      q: "¿Cómo se justifica este gasto a los vecinos?",
+      a: "UrbaReserva pacifica la convivencia. Evita conflictos, automatiza turnos y profesionaliza la gestión de las zonas comunes."
     }
-  }, [selectedTime, isBookingValid]);
-
-  const handleConfirm = async () => {
-    if (!nombre || !portal || !piso || !letra) {
-      showToast('Por favor, completa todos los campos.', 'error');
-      return;
-    }
-    if (!isBookingValid(selectedTime, duration)) {
-      showToast('El horario se solapa con otra reserva.', 'error');
-      return;
-    }
-    const bookingStart = parse(selectedTime, 'HH:mm', selectedDate);
-    if (isBefore(bookingStart, new Date())) {
-      showToast('No puedes reservar en una hora pasada.', 'error');
-      return;
-    }
-
-    setLoading(true);
-    const horaFin = format(addMinutes(parse(selectedTime, 'HH:mm', new Date()), duration), 'HH:mm');
-
-    const { error } = await supabase.from('reservas').insert([{
-      fecha: format(selectedDate, 'yyyy-MM-dd'),
-      hora_inicio: selectedTime,
-      hora_fin: horaFin,
-      portal,
-      piso,
-      puerta: letra,
-      nombre,
-      contacto: 'N/A',
-    }]);
-
-    setLoading(false);
-    if (error) {
-      showToast('Error al guardar. Revisa la conexión.', 'error');
-    } else {
-      setShowSuccess(true);
-    }
-  };
-
-  const handleSearchReservas = async () => {
-    setSearchLoading(true);
-    setSearched(false);
-    
-    const { data, error } = await supabase
-      .from('reservas')
-      .select('*')
-      .eq('nombre', cancelNombre)
-      .eq('portal', cancelPortal)
-      .eq('piso', cancelPiso)
-      .eq('puerta', cancelLetra)
-      .gte('fecha', format(new Date(), 'yyyy-MM-dd')); 
-
-    setSearchLoading(false);
-    setSearched(true);
-
-    if (error) {
-      showToast('Error al buscar reservas.', 'error');
-    } else {
-      setMisReservas(data || []);
-    }
-  };
-
-  const handleCancelReserva = async (id: any) => {
-    setCancelLoading(true);
-    
-    const { error } = await supabase
-      .from('reservas')
-      .delete()
-      .eq('id', id);
-
-    setCancelLoading(false);
-
-    if (error) {
-      showToast('Error al intentar cancelar.', 'error');
-    } else {
-      setShowCancelSuccess(true);
-      setMisReservas(prev => prev.filter(res => res.id !== id));
-      setReservasExistentes(prev => prev.filter(res => res.id !== id));
-    }
-  };
-
-  const calendarDays = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
-    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  const today = startOfDay(new Date());
-
-  const timeSlots = useMemo(() => {
-    const slots = [];
-    for (let h = 8; h <= 22; h++) {
-      slots.push(`${h.toString().padStart(2, '0')}:00`, `${h.toString().padStart(2, '0')}:30`);
-    }
-    return slots;
-  }, []);
-
-  const handleScroll = () => {
-    if (scrollRef.current) {
-      const index = Math.round(scrollRef.current.scrollTop / 56);
-      if (timeSlots[index]) setSelectedTime(timeSlots[index]);
-    }
-  };
-
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = () => setOpenDropdown(null);
-    if (openDropdown) document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [openDropdown]);
-
-  const CustomSelect = ({
-    id, value, onChange, placeholder, options, disabled = false,
-  }: {
-    id: string; value: string; onChange: (v: string) => void;
-    placeholder: string; options: string[]; disabled?: boolean;
-  }) => {
-    const isOpen = openDropdown === id;
-    return (
-      <div className="relative" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setOpenDropdown(isOpen ? null : id)}
-          className={`w-full p-4 bg-slate-50/50 rounded-2xl text-center font-black text-xs border transition-all flex items-center justify-center gap-1
-            ${disabled ? 'opacity-30 cursor-not-allowed border-slate-100' : 'cursor-pointer hover:border-purple-200 border-slate-100'}
-            ${value ? 'text-slate-700' : 'text-slate-300'}
-            ${isOpen ? 'border-purple-300 bg-purple-50/50' : ''}`}
-        >
-          {value || placeholder}
-          <span className={`text-[8px] transition-transform duration-200 inline-block ${isOpen ? 'rotate-180' : ''} ${value ? 'text-slate-400' : 'text-slate-300'}`}>▾</span>
-        </button>
-        {isOpen && (
-          <div className="absolute z-[200] top-full mt-2 left-0 right-0 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl shadow-xl shadow-purple-100/50 overflow-hidden">
-            {options.map((opt) => (
-              <button key={opt} type="button"
-                onClick={() => { onChange(opt); setOpenDropdown(null); }}
-                className={`w-full py-3 text-xs font-black text-center transition-all hover:bg-purple-50 hover:text-purple-600
-                  ${value === opt ? 'bg-purple-600 text-white' : 'text-slate-600'}`}>
-                {opt}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const endTime = format(addMinutes(parse(selectedTime, 'HH:mm', new Date()), duration), 'HH:mm');
-  const bookingIsValid = isBookingValid(selectedTime, duration);
+  ];
 
   return (
-    <div className="min-h-screen bg-[#FDFEFF] text-[#0F172A] pb-20 relative overflow-hidden antialiased font-[var(--font-jakarta),_sans-serif]">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="blob-1 absolute top-[-15%] left-[-10%] w-[70%] h-[70%] bg-purple-300/30 rounded-full blur-[140px]" />
-        <div className="blob-2 absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-violet-200/40 rounded-full blur-[120px]" />
-        <div className="blob-3 absolute top-[35%] right-[0%] w-[45%] h-[45%] bg-indigo-200/25 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen bg-[#FDFEFF] text-slate-900 relative overflow-hidden antialiased font-[var(--font-body),_sans-serif]">
+      
+      {/* Estilos para animaciones */}
       <style jsx global>{`
-        .light-glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.04); }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        @keyframes blobFloat {
-          0%, 100% { transform: scale(1) translate(0px, 0px); opacity: 0.7; }
-          33% { transform: scale(1.07) translate(20px, -15px); opacity: 1; }
-          66% { transform: scale(0.95) translate(-15px, 10px); opacity: 0.5; }
+        .glass-card { 
+          background: rgba(255, 255, 255, 0.95); 
+          backdrop-filter: blur(24px); 
+          border: 1px solid rgba(255, 255, 255, 1); 
         }
-        .blob-1 { animation: blobFloat 8s ease-in-out infinite; }
-        .blob-2 { animation: blobFloat 11s ease-in-out infinite reverse; animation-delay: -3s; }
-        .blob-3 { animation: blobFloat 14s ease-in-out infinite; animation-delay: -6s; }
+        @keyframes pointerClick {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          50% { transform: translate(-2px, 2px) scale(0.9); }
+        }
+        .animate-click {
+          animation: pointerClick 1.5s ease-in-out infinite;
+        }
       `}</style>
 
-      <header className="relative z-10 pt-10 sm:pt-16 pb-6 sm:pb-8 px-4 sm:px-6 text-center">
-        <h1 className="text-4xl sm:text-5xl font-[800] tracking-tighter mb-2 bg-gradient-to-b from-slate-900 to-slate-600 bg-clip-text text-transparent">
-          Reserva <span className="text-purple-600 italic">Pádel</span>
-        </h1>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Calle Ramón y Cajal 25, Alcobendas</p>
-      </header>
+      {/* Fondo Degradado Morado */}
+      <div className="absolute top-0 right-0 w-[80vw] h-[800px] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200/80 via-purple-100/40 to-transparent -z-10 pointer-events-none"></div>
 
-      <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
-
-        <div className="lg:col-span-7">
-          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
-            <div className="flex justify-between items-center mb-10">
-              <h2 className="text-base sm:text-xl font-[800] text-slate-800 capitalize tracking-tight">
-                {format(currentMonth, 'MMMM yyyy', { locale: es })}
-              </h2>
-              <div className="flex gap-2">
-                <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2.5 rounded-xl bg-white border border-slate-100 shadow-sm text-slate-400"><ChevronLeft size={18} /></button>
-                <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2.5 rounded-xl bg-white border border-slate-100 shadow-sm text-slate-400"><ChevronRight size={18} /></button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-center">
-              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day) => (
-                <div key={day} className="text-[10px] font-black text-slate-300 mb-4">{day}</div>
-              ))}
-              {calendarDays.map((day, idx) => {
-                const isSelected = isSameDay(day, selectedDate);
-                const isPast = isBefore(startOfDay(day), today);
-                return (
-                  <button key={idx} onClick={() => !isPast && setSelectedDate(day)} disabled={isPast}
-                    className={`h-8 w-8 sm:h-10 sm:w-10 mx-auto rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
-                      ${isSelected ? 'bg-purple-600 text-white shadow-lg shadow-purple-100' : 'text-slate-600 hover:bg-purple-50 hover:text-purple-600'}
-                      ${!isSameMonth(day, currentMonth) ? 'opacity-10' : 'opacity-100'}
-                      ${isPast && isSameMonth(day, currentMonth) ? 'opacity-25 cursor-not-allowed line-through' : ''}`}>
-                    {format(day, 'd')}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+      {/* Navegación */}
+      <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-sm border-b border-slate-200/50">
+        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-2 text-xl font-extrabold text-slate-900">
+            <Building className="text-indigo-600" size={24} />
+            <span>UrbaReserva</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm font-bold tracking-tight text-slate-600">
+            <a className="hover:text-indigo-600 transition-colors" href="#demo">Cómo funciona</a>
+            <a className="hover:text-indigo-600 transition-colors" href="#caracteristicas">Características</a>
+            <a className="hover:text-indigo-600 transition-colors" href="#faq">FAQ</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-md">
+              Acceso Demo
+            </button>
+          </div>
         </div>
+      </nav>
 
-        <div className="lg:col-span-5 space-y-5 sm:space-y-8">
-          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
-            <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-4">HORARIO</h3>
-            <div className="relative h-44 overflow-hidden mb-8">
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                <div className="w-full h-12 bg-purple-50/50 rounded-2xl border-y border-purple-100 shadow-sm" />
-              </div>
-              <div ref={scrollRef} onScroll={handleScroll}
-                className="flex flex-col items-center gap-2 overflow-y-auto h-full scrollbar-hide py-16 snap-y snap-mandatory">
-                {timeSlots.map((time) => {
-                  const ocupado = isSlotOccupied(time);
-                  return (
-                    <div key={time} className="snap-center h-12 flex items-center justify-center shrink-0 transition-all w-full px-2">
-                      <span className={`font-[800] tracking-tighter transition-all
-                        ${ocupado ? 'text-slate-300 text-base' : selectedTime === time ? 'text-purple-600 scale-110 text-3xl' : 'text-slate-200 text-3xl'}`}>
-                        {time}
-                      </span>
-                      {ocupado && (() => {
-                        const res = reservasExistentes.find((r) => {
-                          if (!r.hora_inicio || !r.hora_fin) return false;
-                          const resInicio = parse(r.hora_inicio.substring(0, 5), 'HH:mm', selectedDate);
-                          const resFin = parse(r.hora_fin.substring(0, 5), 'HH:mm', selectedDate);
-                          const slotInicio = parse(time, 'HH:mm', selectedDate);
-                          return slotInicio >= resInicio && slotInicio < resFin;
-                        });
-                        return (
-                          <span className="ml-2 flex items-center gap-1 text-[10px] font-black text-red-400 whitespace-nowrap">
-                            <X size={10} className="shrink-0" />
-                            {res ? `Portal ${res.portal}, ${res.piso}${res.puerta}` : ''}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  );
-                })}
-              </div>
+      <main className="pt-32">
+        {/* Hero Section (Escritorio) */}
+        <section className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-8 items-start mb-24 min-h-[60vh]">
+          <div className="space-y-8 relative z-10 pt-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest border border-indigo-100">
+              <ShieldCheck size={16} />
+              <span>La paz vecinal empieza aquí</span>
             </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {[30, 60, 90, 120].map((opt) => {
-                const invalido = !isBookingValid(selectedTime, opt);
-                return (
-                  <button key={opt} onClick={() => !invalido && setDuration(opt)} disabled={invalido}
-                    title={invalido ? 'Se solapa con una reserva existente' : `${opt} minutos`}
-                    className={`py-4 rounded-2xl text-[10px] font-black border transition-all
-                      ${duration === opt ? 'bg-purple-600 border-purple-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-purple-200'}
-                      ${invalido ? 'opacity-25 cursor-not-allowed line-through' : ''}`}>
-                    {opt}'
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className={`mt-6 p-4 rounded-2xl text-center text-xs font-bold transition-all
-              ${bookingIsValid ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-red-50 text-red-400 border border-red-100'}`}>
-              {bookingIsValid
-                ? `✓ ${format(selectedDate, 'd MMM', { locale: es })} · ${selectedTime} → ${endTime} (${duration}')`
-                : `✗ Esta franja se solapa con otra reserva`}
-            </div>
-          </section>
-
-          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] relative z-10">
-            <div className="space-y-4">
-              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                <input value={nombre} onChange={(e) => setNombre(e.target.value.toUpperCase())}
-                  className="bg-transparent w-full outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300"
-                  placeholder="NOMBRE VECINO" />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <CustomSelect id="portal" value={portal} onChange={(v) => { setPortal(v); setPiso(''); setLetra(''); }} placeholder="PORTAL" options={['1', '2', '3']} />
-                <CustomSelect id="piso" value={piso} onChange={(v) => { setPiso(v); setLetra(''); }} placeholder="PISO" options={['Bajo', '1', '2', '3', '4']} disabled={!portal} />
-                <CustomSelect id="letra" value={letra} onChange={(v) => setLetra(v)} placeholder="LETRA" options={['A', 'B', 'C']} disabled={!piso} />
-              </div>
-              <button onClick={handleConfirm}
-                disabled={loading || !bookingIsValid || !nombre || !portal || !piso || !letra}
-                className={`w-full text-white p-5 rounded-[2rem] font-[800] text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 mt-2 tracking-widest
-                  ${loading || !bookingIsValid || !nombre || !portal || !piso || !letra ? 'bg-slate-300 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}>
-                {loading ? 'GUARDANDO...' : 'CONFIRMAR'} <CheckCircle size={18} />
+            <h1 className="font-extrabold text-5xl md:text-7xl text-slate-900 leading-[1.05] tracking-tight">
+              Digitaliza tu comunidad y reserva en <span className="text-indigo-600 italic">20 segundos</span>
+            </h1>
+            <p className="text-lg text-slate-600 leading-relaxed max-w-lg font-medium">
+              Elimina el caos de los listados en papel y los grupos de WhatsApp. Una plataforma inteligente para gestionar tu urbanización sin fricción.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <button className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-transform">
+                Solicitar Demostración
+              </button>
+              <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold text-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                <PlayCircle size={20} />
+                Ver funcionamiento
               </button>
             </div>
-          </section>
+          </div>
 
-          <section className="light-glass p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem]">
-            <h3 className="text-center font-black text-[10px] uppercase tracking-[0.3em] text-slate-300 mb-4">¿CANCELAR RESERVA?</h3>
-            <div className="space-y-3">
-              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                <input
-                  value={cancelNombre}
-                  onChange={(e) => { setCancelNombre(e.target.value.toUpperCase()); setSearched(false); setMisReservas([]); }}
-                  className="bg-transparent w-full outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300"
-                  placeholder="TU NOMBRE"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <CustomSelect
-                  id="c-portal" value={cancelPortal}
-                  onChange={(v: string) => { setCancelPortal(v); setCancelPiso(''); setCancelLetra(''); setSearched(false); setMisReservas([]); }}
-                  placeholder="PORTAL" options={['1', '2', '3']}
-                />
-                <CustomSelect
-                  id="c-piso" value={cancelPiso}
-                  onChange={(v: string) => { setCancelPiso(v); setCancelLetra(''); setSearched(false); setMisReservas([]); }}
-                  placeholder="PISO" options={['Bajo', '1', '2', '3', '4']} disabled={!cancelPortal}
-                />
-                <CustomSelect
-                  id="c-letra" value={cancelLetra}
-                  onChange={(v: string) => { setCancelLetra(v); setSearched(false); setMisReservas([]); }}
-                  placeholder="LETRA" options={['A', 'B', 'C']} disabled={!cancelPiso}
-                />
-              </div>
-              <button
-                onClick={handleSearchReservas}
-                disabled={searchLoading || !cancelNombre || !cancelPortal || !cancelPiso || !cancelLetra}
-                className={`w-full p-4 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center justify-center gap-2
-                  ${searchLoading || !cancelNombre || !cancelPortal || !cancelPiso || !cancelLetra
-                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                {searchLoading ? 'BUSCANDO...' : 'BUSCAR MIS RESERVAS'}
-              </button>
-
-              {searched && misReservas.length === 0 && (
-                <div className="text-center text-xs font-bold text-slate-300 py-3">
-                  No tienes reservas activas con estos datos.
-                </div>
-              )}
-              {misReservas.map((res) => (
-                <div key={res.id} className="flex items-center justify-between bg-red-50 border border-red-100 p-4 rounded-2xl">
-                  <div>
-                    <p className="font-black text-xs text-slate-700">
-                      {format(new Date(res.fecha + 'T00:00:00'), "d MMM yyyy", { locale: es })}
-                    </p>
-                    <p className="text-[11px] text-slate-400 font-bold">
-                      {res.hora_inicio?.substring(0,5)} → {res.hora_fin?.substring(0,5)}
-                    </p>
+          {/* Tarjetas Hero (Ocultas en móvil para evitar desorden) */}
+          <div className="hidden lg:flex relative justify-center items-center">
+            <div className="relative w-full max-w-md">
+              {/* Calendario Grande */}
+              <div className="glass-card p-10 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] relative z-10 border border-white">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-extrabold text-slate-800">Abril 2026</h3>
+                  <div className="flex gap-2">
+                    <div className="w-10 h-10 rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 bg-white shadow-sm"><ChevronLeft size={20} /></div>
+                    <div className="w-10 h-10 rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 bg-white shadow-sm"><ChevronRight size={20} /></div>
                   </div>
-                  <button
-                    onClick={() => handleCancelReserva(res.id)}
-                    disabled={cancelLoading}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-xl font-black text-[10px] hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50">
-                    <Trash2 size={12} /> CANCELAR
+                </div>
+                <div className="grid grid-cols-7 text-center text-xs font-black text-slate-300 mb-8 uppercase tracking-widest">
+                  <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+                </div>
+                <div className="grid grid-cols-7 gap-y-6 text-center text-sm font-bold text-slate-400 relative">
+                  <div className="text-slate-200">30</div><div className="text-slate-200">31</div>
+                  {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(d => <div key={d} className="text-slate-300">{d}</div>)}
+                  <div className="relative flex justify-center items-center">
+                    <span className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200 text-sm font-extrabold">17</span>
+                    <Pointer className="absolute -bottom-2 -right-2 text-emerald-500 animate-click z-20" size={24} fill="currentColor" />
+                  </div>
+                  {[18,19,20,21,22,23,24,25,26,27,28,29,30].map(d => <div key={d} className="text-slate-800">{d}</div>)}
+                </div>
+              </div>
+
+              {/* Tarjeta Pablo Flotante */}
+              <div className="absolute -bottom-10 -left-20 glass-card p-6 rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] z-20 flex flex-col gap-4 min-w-[300px] border border-white">
+                <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                  <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center border-2 border-white shadow-sm">
+                    <User size={24} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-base font-extrabold text-slate-900 leading-tight">Pablo</p>
+                    <div className="flex items-center gap-1 text-slate-500">
+                      <MapPin size={14} />
+                      <p className="text-xs font-bold">Portal 1, 2ºA</p>
+                    </div>
+                  </div>
+                  <div className="ml-auto bg-emerald-100 text-emerald-600 p-2 rounded-full">
+                    <CheckCircle2 size={18} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <div className="bg-indigo-600 text-white p-2.5 rounded-xl">
+                    <LayoutGrid size={20} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Pádel 1</span>
+                    <div className="flex items-center gap-1 text-indigo-600 font-bold">
+                      <Clock size={14} />
+                      19:00 - 21:00
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Sección de Demostración Pasos (Móvil y Escritorio) */}
+        <section id="demo" className="max-w-4xl mx-auto mb-32 px-6 space-y-12">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Reserva en 3 sencillos pasos</h2>
+            <p className="text-slate-500 font-medium">Diseñado para ser utilizado por cualquier vecino, sin importar su edad.</p>
+          </div>
+
+          {/* Paso 1: Calendario */}
+          <div className="flex flex-col items-center">
+            <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">Paso 1: Elige el día</span>
+            <div className="glass-card w-full max-w-[380px] p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+              <h3 className="text-xl font-extrabold text-slate-800 mb-8">Abril 2026</h3>
+              <div className="grid grid-cols-7 text-center text-[10px] font-black text-slate-300 mb-6 uppercase">
+                <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+              </div>
+              <div className="grid grid-cols-7 gap-y-5 text-center text-sm font-bold text-slate-400">
+                <div className="text-slate-200">30</div><div className="text-slate-200">31</div>
+                {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(d => <div key={d} className="text-slate-300">{d}</div>)}
+                <div className="flex justify-center"><span className="w-9 h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg font-black text-xs">17</span></div>
+                {[18,19,20,21,22,23,24,25,26].map(d => <div key={d} className="text-slate-800">{d}</div>)}
+              </div>
+            </div>
+          </div>
+
+          {/* Paso 2: Horario (Estilo image_12.png) */}
+          <div className="flex flex-col items-center">
+            <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">Paso 2: Horario y Duración</span>
+            <div className="glass-card w-full max-w-[380px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 text-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Horario</p>
+              <div className="space-y-2 mb-10">
+                <p className="text-2xl font-bold text-slate-200">16:00</p>
+                <div className="bg-indigo-50 py-3 rounded-2xl border border-indigo-100 inline-block px-10">
+                   <p className="text-4xl font-black text-indigo-400 tracking-tight">16:30</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-200">17:00</p>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mb-10">
+                {['30\'', '60\'', '90\'', '120\''].map(t => (
+                  <div key={t} className={`py-3 rounded-2xl border text-xs font-black ${t === '90\'' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400'}`}>
+                    {t}
+                  </div>
+                ))}
+              </div>
+              <div className="bg-indigo-50/50 py-4 rounded-2xl text-indigo-600 text-xs font-bold border border-indigo-100/50">
+                ✓ 17 abr · 16:30 → 18:00 (90')
+              </div>
+            </div>
+          </div>
+
+          {/* Paso 3: Confirmación (Estilo image_14.png) */}
+          <div className="flex flex-col items-center">
+            <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">Paso 3: Identificación</span>
+            <div className="glass-card w-full max-w-[380px] p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-4">
+                <p className="text-sm font-black text-slate-700 uppercase tracking-widest">PABLO</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center font-black text-slate-800 text-sm shadow-sm flex justify-center items-center gap-1">1 <ChevronDown size={14} className="text-indigo-400" /></div>
+                <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center font-black text-slate-800 text-sm shadow-sm flex justify-center items-center gap-1">2 <ChevronDown size={14} className="text-indigo-400" /></div>
+                <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center font-black text-slate-800 text-sm shadow-sm flex justify-center items-center gap-1">A <ChevronDown size={14} className="text-indigo-400" /></div>
+              </div>
+              <button className="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 active:scale-95 transition-transform">
+                Confirmar <CheckCircle2 size={20} />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section id="faq" className="bg-slate-50 border-t border-slate-200 py-32">
+          <div className="max-w-3xl mx-auto px-6">
+            <h2 className="text-4xl font-extrabold text-slate-900 text-center mb-12">Preguntas Frecuentes</h2>
+            <div className="space-y-4">
+              {faqs.map((faq, index) => (
+                <div key={index} className={`bg-white border ${openFaq === index ? 'border-indigo-500' : 'border-slate-200 hover:border-slate-300'} rounded-2xl overflow-hidden transition-all duration-300 shadow-sm`}>
+                  <button onClick={() => setOpenFaq(openFaq === index ? null : index)} className="w-full flex justify-between items-center p-6 text-left">
+                    <span className="font-bold text-slate-900 pr-4">{faq.q}</span>
+                    <ChevronDown className={`text-slate-400 transition-transform duration-300 ${openFaq === index ? 'rotate-180 text-indigo-600' : ''}`} size={20} />
                   </button>
+                  <div className={`px-6 text-slate-600 font-medium overflow-hidden transition-all duration-300 ${openFaq === index ? 'max-h-40 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>{faq.a}</div>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-        </div>
+        {/* Contacto */}
+        <section className="max-w-7xl mx-auto px-6 py-32 grid md:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <h2 className="font-extrabold text-4xl md:text-5xl text-slate-900 tracking-tight leading-tight">Empieza a digitalizar tu comunidad hoy</h2>
+            <p className="text-slate-600 text-lg font-medium max-w-lg">Configuramos una demo gratuita con los datos reales de tu urbanización en menos de 24 horas.</p>
+            <div className="flex flex-col gap-4 text-slate-700 font-bold">
+              <div className="flex items-center gap-3"><Mail className="text-indigo-600" size={20} /><span>contacto@urbareserva.com</span></div>
+              <div className="flex items-center gap-3"><MessageSquare className="text-emerald-500" size={20} /><span>Soporte WhatsApp</span></div>
+            </div>
+          </div>
+          <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100">
+            <h3 className="font-bold text-2xl text-slate-950 mb-8">Solicita una Demo</h3>
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <input type="text" className="w-full bg-slate-50 border border-slate-100 text-slate-900 px-6 py-4 rounded-xl focus:border-indigo-300 focus:outline-none" placeholder="Nombre de la Urbanización" />
+              <input type="email" className="w-full bg-slate-50 border border-slate-100 text-slate-900 px-6 py-4 rounded-xl focus:border-indigo-300 focus:outline-none" placeholder="Email de contacto" />
+              <button className="w-full bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-500 transition-all flex items-center justify-center gap-2">Solicitar Demostración <ArrowRight size={20} /></button>
+            </form>
+          </div>
+        </section>
       </main>
 
-      {toast && (
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 font-black text-sm transition-all
-          ${toast.type === 'error' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-purple-50 text-purple-600 border border-purple-100'}`}>
-          <AlertCircle size={16} className="shrink-0" />
-          {toast.msg}
+      {/* Footer */}
+      <footer className="w-full border-t border-slate-200 bg-white py-12">
+        <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="text-lg font-bold text-slate-900 flex items-center gap-2"><Building className="text-indigo-600" size={20} />UrbaReserva</div>
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026 UrbaReserva. Cumplimiento RGPD.</div>
         </div>
-      )}
-
-      {showSuccess && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
-          <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-purple-200">
-              <CheckCircle size={34} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">¡Reservado!</h2>
-            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Para cancelar, ve a la sección <strong className="text-slate-600">¿Cancelar reserva?</strong> e introduce tu nombre y dirección.
-            </p>
-            <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all active:scale-95">
-              ENTENDIDO
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showCancelSuccess && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md">
-          <div className="light-glass p-7 sm:p-10 rounded-[2rem] sm:rounded-[3rem] max-w-sm w-full text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-red-100">
-              <Trash2 size={30} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Cancelada</h2>
-            <p className="text-slate-400 text-sm mb-6 leading-relaxed">Tu reserva ha sido eliminada correctamente.</p>
-            <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all active:scale-95">
-              ENTENDIDO
-            </button>
-          </div>
-        </div>
-      )}
-
+      </footer>
     </div>
   );
 }
