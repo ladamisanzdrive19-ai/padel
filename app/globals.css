@@ -25,3 +25,27 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+/* Añade esto al final de tu archivo globals.css */
+.glass-card { 
+  background: rgba(255, 255, 255, 0.95); 
+  backdrop-filter: blur(24px); 
+  border: 1px solid rgba(255, 255, 255, 1); 
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+@keyframes pointerClick {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-2px, 2px) scale(0.9); }
+}
+.animate-click {
+  animation: pointerClick 1.5s ease-in-out infinite;
+}
+
+@keyframes blobFloat {
+  0%, 100% { transform: scale(1) translate(0px, 0px); opacity: 0.7; }
+  33% { transform: scale(1.07) translate(20px, -15px); opacity: 1; }
+  66% { transform: scale(0.95) translate(-15px, 10px); opacity: 0.5; }
+}
+.blob-1 { animation: blobFloat 8s ease-in-out infinite; }
+.blob-2 { animation: blobFloat 11s ease-in-out infinite reverse; animation-delay: -3s; }
+.blob-3 { animation: blobFloat 14s ease-in-out infinite; animation-delay: -6s; }
