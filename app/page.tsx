@@ -1,7 +1,7 @@
 import { Building, ShieldCheck, PlayCircle, CheckCircle2, LayoutGrid, ChevronLeft, ChevronRight, Mail, MessageSquare, ArrowRight, User, Clock, MapPin, Zap } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import punteroImg from '../puntero.png'; 
+import punteroImg from './puntero.png';
 import InteractiveDemo from './components/InteractiveDemo';
 import FaqSection from './components/FaqSection';
 
